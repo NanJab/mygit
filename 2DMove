@@ -1,0 +1,102 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Move : MonoBehaviour
+{
+    public SpriteRenderer sRenderer;
+    Player player;
+    Animator anime;
+    Rigidbody2D rigid;
+    Attack attack;
+
+    public bool jumpAble;
+    public bool moveAble;
+    public float fallMultiplier;
+
+    private float previousY; // 이전 프레임의 y 좌표를 저장할 변수
+    private Vector2 vecGravity;
+    private void OnCollisionEnter2D(Collision2D collision)
+    {
+        if(collision.gameObject.tag == "floor")
+        {
+            jumpAble = false;
+            anime.SetBool("fall", false);
+        }
+    }
+
+    void Start()
+    {
+        player= GetComponent<Player>();
+        anime = GetComponent<Animator>();
+        rigid = GetComponent<Rigidbody2D>();
+        attack = GetComponent<Attack>();
+        vecGravity = new Vector2(0, -Physics2D.gravity.y);
+        moveAble = true;
+    }
+
+    void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.Space) && !jumpAble)
+        {
+            Jump();
+        }
+
+        float currentY = transform.position.y; // 현재 프레임의 y 좌표
+
+        if(currentY < previousY)
+        {
+            // 떨어질 때 중력을 강하게해서 더 빠르게 내려올 수 있도록
+            rigid.velocity -= vecGravity * fallMultiplier * Time.deltaTime;
+            anime.SetBool("jump", false);
+            anime.SetBool("fall", true);
+
+        }
+
+        previousY = currentY; // 현재 프레임의 y 좌표를 이전 프레임의 좌표로 업데이트
+    }
+
+    private void FixedUpdate()
+    {        
+        if(moveAble)
+        {
+            PlayerMove();
+        }
+        
+    }
+
+    public void PlayerMove()
+    {
+        float xMove = Input.GetAxis("Horizontal");
+        // 오른쪽 이동
+        if(xMove > 0)
+        {
+            sRenderer.flipX = false;
+            anime.SetBool("move", true);
+        }
+        // 왼쪽 이동
+        else if(xMove < 0)
+        {
+            sRenderer.flipX = true;
+            anime.SetBool("move", true);
+        }
+        else
+        {
+            anime.SetBool("move", false);
+        }
+        // 이동 속도
+        rigid.velocity = new Vector2(xMove * player.moveSpeed, rigid.velocity.y);
+    }
+
+    void Jump()
+    {
+        // 점프
+        rigid.velocity = new Vector2(rigid.velocity.x, player.jumpHeight);
+        //rigid.AddForce(new Vector2(rigid.velocity.x, player.jumpHeight));
+        // 점프 애니메이션
+        anime.SetBool("jump", true);        
+        // 점프 중
+        jumpAble = true;
+    }
+
+}
